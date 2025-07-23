@@ -41,8 +41,8 @@ rawTable <- read_tsv("onlyMicrotus_samplesV425_cleaned.txt",
 
 nrow(rawTable)
 colnames(rawTable)
-cols <- c("Genus", "Species", "Samplinglocation", "Country", "Sample number (on tube or bag)", "Individual number", "Extraction y/n?", "Place of capture", "Latitude", "Longitude", "DNADNA_.Number.in..20", "RNARNA_.Number.in..80", "Published")
-# "Microsat", "Cytochrom b", "Specimen-20",	"GewebeRack", "Number in Fridge oder -20C oder -80C", "DNADNA_.Number.in..20", "RNARNA_.Number.in..80",	"Lung.Tissue", "Positive? (TULV)", "Published")
+cols <- c("Genus", "Species", "Samplinglocation", "Country", "Sample number (on tube or bag)", "Individual number", "Extraction y/n?", "Place of capture", "Latitude", "Longitude", "Specimen-20", "DNADNA_.Number.in..20", "RNARNA_.Number.in..80", "Published")
+# "Microsat", "Cytochrom b", "GewebeRack", "Number in Fridge oder -20C oder -80C", "DNADNA_.Number.in..20", "RNARNA_.Number.in..80",	"Lung.Tissue", "Positive? (TULV)", "Published")
 Data <- rawTable[, cols]
 #View(Data)
 
@@ -60,7 +60,7 @@ arvalis_data$Latitude  <- as.numeric(as.character(arvalis_data$Latitude))
 
 
 # Samples to add:
-add_samples <- c("MarFSi01","MarFSJ456","MarFTh478","MarFTr01","MarFCm04",
+add_samples <- c("MarFSi01","MarFSJ456", "MarFTr01","MarFCm04",
                  "MarFCh05","MarFCm01","MarFM05",
                  "MarGBGGo01","MarGBGCh01","MarGBGAt04","MarGBGAe01")
 
@@ -70,7 +70,11 @@ arvalis_data <- arvalis_data %>%
     Add_marked = `Individual number` %in% add_samples
   )
 #View(arvalis_data)
+```
 
+```{r}
+#| output: false
+#| echo: false
 # Summarise by coordinate and assign color priority
 coords_summary <- arvalis_data %>%
   filter(!is.na(Latitude), !is.na(Longitude)) %>%
@@ -82,7 +86,8 @@ coords_summary <- arvalis_data %>%
       tibble(
         sample_name = `Individual number`,
         dna = DNADNA_.Number.in..20,
-        rna = RNARNA_.Number.in..80)),
+        rna = RNARNA_.Number.in..80,
+        Frosen_body = `Specimen-20`)),
     Location = Samplinglocation,
     has_add_sample = any(Add_marked),
   has_published = any(Published != ""),
@@ -91,23 +96,21 @@ coords_summary <- arvalis_data %>%
       has_published ~ "green",
       TRUE ~ "darkgrey"),
   .groups = "drop")
+
 #View(coords_summary)
 
 # Color each sample based on DNA/RNA
-color_sample_name <- function(sample_name, dna, rna) {
-  has_dna <- !is.na(dna) & dna != ""
-  has_rna <- !is.na(rna) & rna != ""
+color_sample_name <- function(sample_name, Frosen_body) {
+#  has_dna <- !is.na(dna) & dna != ""
+#  has_rna <- !is.na(rna) & rna != ""
+  has_body <- !is.na(Frosen_body) && Frosen_body != ""
   
-  color <- if (has_dna & has_rna) {
-    "orange"
-  } else if (has_dna) {
-    "blue"
-  } else if (has_rna) {
-    "violet"
-  } else {
-    "black"
-  }
-  
+  ### change here so that frozen body is visible
+  color <- if (has_body) {"blue"}
+#    if (has_dna & has_rna) {"orange"}  
+#    else if (has_dna) {"blue"}
+#    else if (has_rna) {"violet"}
+    else {"black"}
   paste0('<span style="color:', color, ';">', sample_name, '</span>')
 }
 
@@ -118,8 +121,9 @@ coords_summary <- coords_summary %>%
       sapply(1:nrow(samples_info), function(i) {
         color_sample_name(
           samples_info$sample_name[i],
-          samples_info$dna[i],
-          samples_info$rna[i]
+          samples_info$Frosen_body[i]
+#          samples_info$dna[i],
+#          samples_info$rna[i]
         )
       }),
       collapse = "<br>"
@@ -129,11 +133,15 @@ coords_summary <- coords_summary %>%
 
 
 
+
 # Split into three groups
 red_dots <- coords_summary %>% filter(color == "red")
 green_dots <- coords_summary %>% filter(color == "green")
 grey_dots <- coords_summary %>% filter(color == "darkgrey")
 
+```
+
+```{r}
 # Base map
 map <- leaflet() %>%
   setView(lat = 49.76666667, lng = 0.516666667, zoom = 7) %>%
@@ -193,15 +201,15 @@ map <- map %>%
    addLegend(
     position = "bottomleft",
     colors = c("darkgrey", "green", "red"),
-    labels = c("Available samples", "Wang&Heckel(2025)", "Samples to add"),
-    title = "Dot Color Legend",
+    labels = c("Sampled locations", "Wang&Heckel(2023/25)", "Samples to add"),
+    title = "Dot color legend",
     opacity = 1
   ) %>%
   addLegend(
     position = "topright",
-    colors = c("blue", "green", "red"),
-    labels = c("DNA extracted", "RNA extracted", "DNA & RNA extracted"),
-    title = "Extraction Status",
+    colors = "blue",  # colors = c("blue", "violet", "orange"),
+    labels = "Frosen specimen at -20",  # labels = c("DNA extracted", "RNA extracted", "DNA & RNA extracted"),
+    title = "Sample ID color legend",
     opacity = 1
   )
 
