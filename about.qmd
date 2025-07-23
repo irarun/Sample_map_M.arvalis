@@ -1,9 +1,0 @@
----
-title: "About"
----
-
-This site contains info about my project.
-
-```{r}
-1 + 1
-```

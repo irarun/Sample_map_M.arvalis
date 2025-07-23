@@ -1,9 +1,0 @@
----
-title: "Sample_map_M.arvalis"
----
-
-This is my project.
-
-```{r}
-1 + 1
-```
