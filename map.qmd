@@ -6,6 +6,10 @@ format: html
 Below you can find the sample map.
 
 ```{r}
+#| warning: false
+#| message: false
+#| results: 'hide'
+
 library(leaflet)
 library(leaflet.minicharts)
 library(widgetframe)
@@ -191,4 +195,13 @@ map <- map %>%
     opacity = 1)
 
 map
+```
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+
+map
+
 ```

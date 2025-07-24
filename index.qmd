@@ -2,4 +2,4 @@
 title: "PhD project"
 ---
 
-This project explores the genomics of \**Microtus arvalis*\* on isolated islands.
+This project explores the genomics of *Microtus arvalis* on isolated islands.
