@@ -11,6 +11,8 @@ website:
 format:
   html:
     page-layout: full
+    code-fold: true
+    code-summary: "Show the code"
     theme:
       - cosmo
       - brand
