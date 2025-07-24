@@ -21,7 +21,7 @@ library(xfun)
 library(writexl)
 
 
-### prepearing the data ###
+### prepearing the data
 
 # convert lines to UTF-8 (replacing problematic chars)
 raw_lines <- readLines("onlyMicrotus_samplesV425_improved4.txt", encoding = "latin1")
@@ -30,15 +30,15 @@ clean_lines <- iconv(raw_lines, from = "latin1", to = "UTF-8", sub = "")
 # Save cleaned file
 writeLines(clean_lines, "onlyMicrotus_samplesV425_cleaned.txt")
 
-rawTable <- read_tsv("onlyMicrotus_samplesV425_cleaned.txt",
-  col_types = cols(
+rawTable <- read_tsv("onlyMicrotus_samplesV425_cleaned.txt")
+  #col_types = cols(
     #Add = col_character(),
-    Published = col_character(),
-    .default = col_guess()))  # let other columns be guessed
+    #Published = col_character(),
+    #.default = col_guess()) # let other columns be guessed
 
 #nrow(rawTable)
 #colnames(rawTable)
-cols <- c("Genus", "Species", "Samplinglocation", "Country", "Sample number (on tube or bag)", "Individual number", "Extraction y/n?", "Place of capture", "Latitude", "Longitude", "Specimen-20", "DNADNA_.Number.in..20", "RNARNA_.Number.in..80", "Published")
+cols <- c("Genus", "Species", "Samplinglocation", "Country", "Sample number (on tube or bag)", "Individual number", "Extraction y/n?", "Place of capture", "Latitude", "Longitude", "Specimen-20", "DNADNA_.Number.in..20", "RNARNA_.Number.in..80")
 # Other cols: "Microsat", "Cytochrom b", "GewebeRack", "Number in Fridge oder -20C oder -80C", "Lung.Tissue", "Positive? (TULV)", "Published")
 
 Data <- rawTable[, cols]
@@ -60,9 +60,26 @@ add_samples <- c("MarFSi01","MarFSJ456", "MarFTr01","MarFCm04",
                  "MarFCh05","MarFCm01","MarFM05",
                  "MarGBGGo01","MarGBGCh01","MarGBGAt04","MarGBGAe01")
 
+# already published samples
+WangHeckel2023 <- c("FGr14", "FMc03", "FOg02", "FPi555", "FSt24", "OBSO234", "OBWs01",
+               "OEOs14", "OEOs15", "OMBr149", "OMHo277", "ORGs21", "ORWa268",
+               "OSaLi257", "OSaNe01", "OSJC01", "OSWi166", "OWLs033", "OWPg01")
+
+Wang2025 <- c("BSt095", "BVe061", "FDa504", "FFr549", "FMc03", "FPi555", "Ft24",
+               "FA01", "FCh05", "FTh497", "EMq03", "ESa08", "ESAv05", "FM05", "OBSO234",
+               "OBWs01", "OBWs02", "OEOs14", "OEOs15", "OMBr149", "OMHo277", "OMSe194",
+               "OMSO221", "OMSQ273", "ORGs21", "ORNe205", "ORWa268", "OSaLi257", "OSaNe01",
+               "OSaWh256", "OSGr134", "OSJC01", "OSWi166", "OWLs033", "OWNe051", "OWPg01",
+               "CHBo17", "CHVa02", "ISc01", "CZD02", "PSr06", "RuKo01", "DAb06", "DWa04", "He42")
+
+# all published samples
+published <- unique(c(WangHeckel2023, Wang2025))
+published <- paste0("Mar", published)
+published
+
 arvalis_data <- arvalis_data %>%
   mutate(
-    Published = trimws(as.character(Published)),
+    Published = `Individual number` %in% published,
     Add_marked = `Individual number` %in% add_samples)
 #View(arvalis_data)
 
@@ -78,10 +95,10 @@ coords_summary <- arvalis_data %>%
         sample_name = `Individual number`,
         dna = DNADNA_.Number.in..20,
         rna = RNARNA_.Number.in..80,
-        Frosen_body = `Specimen-20`)),
+        Frozen_body = `Specimen-20`)),
     Location = Samplinglocation,
     has_add_sample = any(Add_marked),
-  has_published = any(Published != ""),
+    has_published = any(Published),
     color = case_when(
       has_add_sample ~ "red",
       has_published ~ "green",
@@ -91,10 +108,10 @@ coords_summary <- arvalis_data %>%
 #View(coords_summary)
 
 # color each sample based on presence/absence of frozen specimen or DNA/RNA
-color_sample_name <- function(sample_name, Frosen_body) {
+color_sample_name <- function(sample_name, Frozen_body) {
 #  has_dna <- !is.na(dna) & dna != ""
 #  has_rna <- !is.na(rna) & rna != ""
-  has_body <- !is.na(Frosen_body) && Frosen_body != ""
+  has_body <- !is.na(Frozen_body) && Frozen_body != ""
   
   ### change here so that frozen body is visible
   color <- if (has_body) {"blue"}
@@ -111,7 +128,7 @@ coords_summary <- coords_summary %>%
       sapply(1:nrow(samples_info), function(i) {
         color_sample_name(
           samples_info$sample_name[i],
-          samples_info$Frosen_body[i])}),
+          samples_info$Frozen_body[i])}),
 #          samples_info$dna[i],
 #          samples_info$rna[i]
       collapse = "<br>")) %>%
@@ -123,7 +140,7 @@ green_dots <- coords_summary %>% filter(color == "green")
 grey_dots <- coords_summary %>% filter(color == "darkgrey")
 
 
-### creating the map ###
+### creating the map
 
 # base map
 map <- leaflet() %>%
@@ -184,7 +201,7 @@ map <- map %>%
    addLegend(
     position = "bottomleft",
     colors = c("darkgrey", "green", "red"),
-    labels = c("Sampled locations", "Wang&Heckel(2023/25)", "Samples to add"),
+    labels = c("Sampled locations", "Published (2023/2025)", "Samples to add"),
     title = "Dot color legend",
     opacity = 1) %>%
   addLegend(
