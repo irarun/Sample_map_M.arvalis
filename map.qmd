@@ -6,8 +6,6 @@ format: html
 Below you can find the sample map.
 
 ```{r}
-#| echo: false
-
 library(leaflet)
 library(leaflet.minicharts)
 library(widgetframe)
