@@ -6,7 +6,6 @@ format: html
 Below you can find the sample map.
 
 ```{r}
-#| output: false
 #| echo: false
 
 library(leaflet)
